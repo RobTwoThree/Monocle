@@ -30,6 +30,51 @@ var ultraIconLarge = new L.icon({
             iconAnchor:   [17.5, 17.5], // point of the icon which will correspond to marker's location
             popupAnchor:  [0, -27] // point from which the popup should open relative to the iconAnchor
         });
+
+//const CROWDSOURCE_HTML=`<div><button onclick="postCrowdSource(this)" data-name="${item.gym_name}" data-lat="${item.lat}" data-long="${item.lon}" data-gymid="${item.external_id}">EX Raid Report</button></div>`;
+
+// POST GYM ID, Name, Lat, and Long
+function postCrowdSource(scope){
+    const crowdObj = {
+        "id": $(scope).data('gymid'),
+        "name": $(scope).data('name'),
+        "lat": $(scope).data('lat'),
+        "long": $(scope).data('long')
+    }
+
+    $.ajax({
+        type: "POST",
+        url: 'http://localhost:3000/new',
+        data: crowdObj,
+        dataType: 'json'
+    })
+    .then(results => {
+        console.log("Successful POST Received");
+        console.log(results);
+    })
+    .catch(err => {
+        console.log("Failure to POST");
+        console.error(err);
+    });
+}
+
+function getCrowdSource(gym_id){
+    console.log(`Loading Crowdsource Data for ${gym_id}`);
+ 
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: `http://localhost:3000/${gym_id}`
+    })
+    .then(results => {
+        console.log(results.body);
+        // Return EX Raid Info here if it exists.
+        $('.crowd').html(results.body);
+    })
+    .catch(err => {
+        $('.crowd').html("No EX Raid Reports Found");
+    })
+}
         
 var PokemonIcon = L.Icon.extend({
     options: {
@@ -44,9 +89,10 @@ var PokemonIcon = L.Icon.extend({
         boostedPokemonDisplay();
         
         // If options.form exists, set the form_text accordingly.
+        var form_text = '';
         (this.options.form) 
-        ? const form_text = `<div class="form_text">${this.options.form}</div>`
-        : const form_text = ``;
+        ? form_text = `<div class="form_text">${this.options.form}</div>`
+        : form_text = ``;
 
         // Set initial innerHTML, to not repeat code.
         div.innerHTML = 
@@ -104,7 +150,7 @@ var FortIcon = L.Icon.extend({
         div.innerHTML =
             '<div class="fortmarker">' +
                 `<div class="fort_container">` +
-                    `<img class="fort_icon" src="static/monocle-icons/forts/${this.options.fort_team}.png?201" />` +
+                    `<img class="fort_icon" src="static/monocle-icons/forts/${this.options.fort_team}.png" />` +
                 `</div>` +
                 `<div class="fort_slots_container">` +
                     `<img class="fort_slots_icon" src="static/img/num_${this.options.open_slots.png}" />` +
@@ -256,7 +302,7 @@ var RaidIcon = L.Icon.extend({
 
         // Sponsor Check, apply HTML if they are/aren't.
         (sponsor !== 'none')
-        ? div.innerHTML += sponsorHTML;
+        ? div.innerHTML += sponsorHTML
         : div.innerHTML += nonsponsorHTML;
 
         return div;
@@ -515,12 +561,17 @@ function getRaidPopupContent (item) {
     if ((item.raid_level >= 3) && (item.raid_pokemon_id !== 0)) {
          content += '<br><b>Weak Against:</b><br><img src="static/monocle-icons/raids/counter-' + item.raid_pokemon_id + '.png">';
     }
+    content += `<div class="crowd"></div>`
+    content += `<div><button onclick="postCrowdSource(this)" data-name="${item.gym_name}" data-lat="${item.lat}" data-long="${item.lon}" data-gymid="${item.external_id}">EX Raid Report</button></div>`;
     content += '<br><br><a href="https://www.google.com/maps/?daddr='+ item.lat + ','+ item.lon +'" target="_blank" title="See in Google Maps">Get Directions</a>';
+
     if (item.raid_pokemon_id !== 0) {
         content += '&nbsp; | &nbsp;';
         content += '<a href="https://pokemongo.gamepress.gg/pokemon/' + item.raid_pokemon_id + '#raid-boss-counters" target="_blank" title="Raid Boss Counters">Raid Boss Counters</a>';
     }
     content += '</div>'
+
+    getCrowdSource(item.external_id);
     return content;
 }
 
@@ -602,9 +653,12 @@ function getFortPopupContent (item) {
                        '<br><b>*Data not available</b>';
         }
     }
+    content += `<div class="crowd"></div>`;
+    content += `<div><button onclick="postCrowdSource(this)" data-name="${item.gym_name}" data-lat="${item.lat}" data-long="${item.lon}" data-gymid="${item.external_id}">EX Raid Report</button></div>`;
     content += '<br><a href=https://www.google.com/maps/?daddr='+ item.lat + ','+ item.lon +' target="_blank" title="See in Google Maps">Get directions</a>';
     content += '</div>'
 
+    getCrowdSource(item.external_id);
     return content;
 }
 
@@ -846,8 +900,11 @@ function ExGymMarker (raw) {
         content += '<div class="ex_gym_popup">';
         content += '<b>' + raw.name + ' Gym</b>';
         content += '<br>has been idenified as being an <br>EX Raid Eligible Gym.';
+        content += `<div class="crowd"></div>`;
+        content += `<div><button onclick="postCrowdSource(this)" data-name="${raw.name}" data-lat="${raw.lat}" data-long="${raw.lon}" data-gymid="${raw.external_id}">EX Raid Report</button></div>`;
         content += '<br><br><a href=https://www.google.com/maps/?daddr='+ raw.lat + ','+ raw.lon +' target="_blank" title="See in Google Maps">Get directions</a>';
         content += '</div>';
+        getCrowdSource(raw.external_id);
         event.popup.setContent(content);
     });
     marker.bindPopup();
@@ -871,8 +928,11 @@ function ExRaidMarker (raw) {
         content += '<br><br><a href="#" data-action="display" class="ex_raid_popup_show_raids">Show Current Raids</a>';
         content += '&nbsp; | &nbsp;';
         content += '<a href="#" data-action="hide" class="ex_raid_popup_show_raids">Hide Current Raids</a>';
+        content += `<div class="crowd"></div>`;
+        content += `<div><button onclick="postCrowdSource(this)" data-name="${raw.name}" data-lat="${raw.lat}" data-long="${raw.lon}" data-gymid="${raw.external_id}">EX Raid Report</button></div>`;
         content += '<br><br><a href=https://www.google.com/maps/?daddr='+ raw.lat + ','+ raw.lon +' target="_blank" title="See in Google Maps">Get directions</a>';
         content += '</div>';
+        getCrowdSource(raw.external_id);
         event.popup.setContent(content);
     });
     marker.bindPopup();
@@ -1172,9 +1232,10 @@ function addWeatherToMap (data, map) {
             }
         });
 
+        var weather_icon_bg
         (!item.condition)
-        ? var weather_icon_bg = 'extreme_icon'
-        : var weather_icon_bg = 'icon';
+        ? weather_icon_bg = 'extreme_icon'
+        : weather_icon_bg = 'icon';
 
         weatherIconMarker.bindPopup(
             '<div class="weather_popup">' +
@@ -2787,7 +2848,7 @@ setSettingsDefaults();
 : $('.sponsor_icon_marker').css('visibility', 'visible');
 
 (getPreference("show_boosted_pokemon") === "hide")
-? $('.boosted_type').css('visibility','hidden'
+? $('.boosted_type').css('visibility','hidden')
 : $('.boosted_type').css('visibility','visible');
 
 (getPreference("gen1_buttons") === "display_gen1")
@@ -3006,9 +3067,11 @@ function onLocationFound(e) {
 
 // Really? Copying this too?
 function getSponsorGymType(raw) {
-    (raw.external_id.includes("."))
-    ? const sponsor_type = 'non-sponsored'
-    : const sponsor_type = 'sponsored';
+    var sponsor_type = '';
+    var id = raw.external_id;
+    (id.includes('.'))
+    ? sponsor_type = 'non-sponsored'
+    : sponsor_type = 'sponsored';
 
     return sponsor_type;
 }
@@ -3021,17 +3084,19 @@ function getVertices(center_point) {
 }
 
 function getTypeIcons(pokemon_id) {
+    var innerHTML = '';
     (pokemon_name_type[pokemon_id][3] != "none")
-    ? const innerHTML = `<div class="type_icons"><img id="type" class="type-${pokemon_name_type[pokemon_id][2]}" src="static/img/blank_1x1.png"><img id="type" class="type-${pokemon_name_type[pokemon_id][3]}" src="static/img/blank_1x1.png"></div>`
-    : const innerHTML = `<div class="type_icons"><img id="type" class="type-${pokemon_name_type[pokemon_id][2]}" src="static/img/blank_1x1.png"></div>`;
+    ? innerHTML = `<div class="type_icons"><img id="type" class="type-${pokemon_name_type[pokemon_id][2]}" src="static/img/blank_1x1.png"><img id="type" class="type-${pokemon_name_type[pokemon_id][3]}" src="static/img/blank_1x1.png"></div>`
+    : innerHTML = `<div class="type_icons"><img id="type" class="type-${pokemon_name_type[pokemon_id][2]}" src="static/img/blank_1x1.png"></div>`;
     
     return innerHTML;
 }
 
 function checkBoost(boost_status) {
+    var innerHTML = '';
     (boost_status === "boosted")
-    ? const innerHTML = '<div class="boosted_type"><img id="boost" class="boosted_icon" src="static/img/blank_1x1.png"></div>'
-    : const innerHTML = '';
+    ? innerHTML = '<div class="boosted_type"><img id="boost" class="boosted_icon" src="static/img/blank_1x1.png"></div>'
+    : innerHTML = '';
 
     return innerHTML;
 }
