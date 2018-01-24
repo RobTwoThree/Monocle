@@ -30,6 +30,51 @@ var ultraIconLarge = new L.icon({
             iconAnchor:   [17.5, 17.5], // point of the icon which will correspond to marker's location
             popupAnchor:  [0, -27] // point from which the popup should open relative to the iconAnchor
         });
+
+//const CROWDSOURCE_HTML=`<div><button onclick="postCrowdSource(this)" data-name="${item.gym_name}" data-lat="${item.lat}" data-long="${item.lon}" data-gymid="${item.external_id}">EX Raid Report</button></div>`;
+
+// POST GYM ID, Name, Lat, and Long
+function postCrowdSource(scope){
+    const crowdObj = {
+        "id": $(scope).data('gymid'),
+        "name": $(scope).data('name'),
+        "lat": $(scope).data('lat'),
+        "long": $(scope).data('long')
+    }
+
+    $.ajax({
+        type: "POST",
+        url: 'http://localhost:3000/new',
+        data: crowdObj,
+        dataType: 'json'
+    })
+    .then(results => {
+        console.log("Successful POST Received");
+        console.log(results);
+    })
+    .catch(err => {
+        console.log("Failure to POST");
+        console.error(err);
+    });
+}
+
+function getCrowdSource(gym_id){
+    console.log(`Loading Crowdsource Data for ${gym_id}`);
+ 
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: `http://localhost:3000/${gym_id}`
+    })
+    .then(results => {
+        console.log(results.body);
+        // Return EX Raid Info here if it exists.
+        $('.crowd').html(results.body);
+    })
+    .catch(err => {
+        $('.crowd').html("No EX Raid Reports Found");
+    })
+}
         
 var PokemonIcon = L.Icon.extend({
     options: {
@@ -37,68 +82,59 @@ var PokemonIcon = L.Icon.extend({
     },
     createIcon: function() {
         var div = document.createElement('div');
-        var form_text = '';
         var type_icon_html = getTypeIcons(this.options.iconID);
         var boosted_icon_html = checkBoost(this.options.boost_status);
         
         typeIconDisplay();
         boostedPokemonDisplay();
         
-        if ( this.options.form ) {
-            form_text = '<div class="form_text">' + this.options.form + '</div>';
-        }
-                                
+        // If options.form exists, set the form_text accordingly.
+        var form_text = '';
+        (this.options.form) 
+        ? form_text = `<div class="form_text">${this.options.form}</div>`
+        : form_text = ``;
+
+        // Set initial innerHTML, to not repeat code.
+        div.innerHTML = 
+            `<div class="pokemarker">` +
+                `<div class="sprite-${getPreference("icon_theme_buttons")}">` +
+                    `<span class="sprite-${getPreference("icon_theme_buttons")}-${this.options.iconID}" />` +
+                `</div>` 
+
+        // HTML for Pokemon Expiration Time
+        const timeRemaining =  
+            `<div class="remaining_text" data-expire="${this.options.expires_at}">` +
+                `${calculateRemainingTime(this.options.expires_at)}</div>` +
+                `${form_text}` +
+            `</div>`;   
+
+        // Under 80% IV                        
         if ( this.options.iv > 0 && this.options.iv < 80 ) {
-            div.innerHTML =
-                '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
-                    '</div>' +
-                    '<div class="iv_text">' + this.options.iv.toFixed(0) + '%</div>' +
-                    '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
-                    form_text +
-                    '</div>';
+            div.innerHTML +=
+                `<div class="iv_text">${this.options.iv.toFixed(0)}%</div>` +
+                `${timeRemaining}`
+        // Over 80% IV
         }else if ( this.options.iv >= 80 && this.options.iv < 90 ) {
-            div.innerHTML =
-                '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
-                    '</div>' +
-                    '<div class="iv_gt_80_text">' + this.options.iv.toFixed(0) + '%</div>' +
-                    '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
-                    form_text +
-                    '</div>';
+            div.innerHTML +=
+                `<div class="iv_gt_80_text">${this.options.iv.toFixed(0)}%</div>` +
+                `${timeRemaining}`
+        // Over 90% IV
         }else if ( this.options.iv >= 90 && this.options.iv < 100) {
-            div.innerHTML =
-                '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
-                    '</div>' +
-                    '<div class="iv_gt_90_text">' + this.options.iv.toFixed(0) + '%</div>' +
-                    '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
-                    form_text +
-                    '</div>';
+            div.innerHTML +=
+                `<div class="iv_gt_90_text">${this.options.iv.toFixed(0)}%</div>` +
+                `${timeRemaining}`
+        // 100% IV
         }else if ( this.options.iv == 100 ) {
-            div.innerHTML =
-                '<div class="pokemarker">' +
-                '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
-                '</div>' +
-                '<div class="iv_eq_100_img"><img class="iv_eq_100_img" src="static/img/100.png"></div>' +
-                '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
-                form_text +
-                '</div>';
+            div.innerHTML +=
+                `<div class="iv_eq_100_img"><img class="iv_eq_100_img" src="static/img/100.png"></div>` +
+                `${timeRemaining}`
+        // No IV        
         }else{
-            div.innerHTML =
-                '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
-                    '</div>' +
-                    '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
-                    form_text +
-                    type_icon_html +
-                    boosted_icon_html +
-                    '</div>';
+            div.innerHTML +=
+                `<div class="remaining_text" data-expire="${this.options.expires_at}">` +
+                    `${calculateRemainingTime(this.options.expires_at)}</div>` +
+                    `${form_text}${type_icon_html}${boosted_icon_html}` +
+                `</div>`;
         }
         
         return div;
@@ -113,13 +149,13 @@ var FortIcon = L.Icon.extend({
         var div = document.createElement('div');
         div.innerHTML =
             '<div class="fortmarker">' +
-                '<div class="fort_container">' +
-                    '<img class="fort_icon" src="static/monocle-icons/forts/' + this.options.fort_team + '.png?201" />' +
-                '</div>' +
-                '<div class="fort_slots_container">' +
-                    '<img class="fort_slots_icon" src="static/img/num_' + this.options.open_slots + '.png" />' +
-                '</div>' +
-            '</div>';
+                `<div class="fort_container">` +
+                    `<img class="fort_icon" src="static/monocle-icons/forts/${this.options.fort_team}.png" />` +
+                `</div>` +
+                `<div class="fort_slots_container">` +
+                    `<img class="fort_slots_icon" src="static/img/num_${this.options.open_slots.png}" />` +
+                `</div>` +
+            `</div>`;
         return div;
     }
 });
@@ -130,36 +166,50 @@ var AltFortIcon = L.Icon.extend({
     },
     createIcon: function() {
         var div = document.createElement('div');
-        var sponsor = '';
-        
+        var sponsor = 'none';
         // Apply sponsored/park logo settings
         sponsoredGymLogoDisplay();
-        
-        // Copying my code? HAHA!
-        if (this.options.external_id.includes(".")) {
-        } else {
-            if (this.options.gym_name === "Starbucks") {
-                sponsor = 'starbucks';
-            } else {
-                sponsor = 'sprint';
+
+        // Sponsor Checking
+        if (!this.options.external_id.includes(".")){
+
+            switch(this.options.gym_name){
+                case 'Starbucks':
+                    sponsor = 'starbucks';
+                    break;
+
+                case 'Sprint':
+                    sponsor = 'sprint';
+                    break;
+
+                case 'Get $100 In PokéCoins Free':
+                    sponsor = 'sprint';
+                    break;
+
+                default:
+                    // Default to Sprint, because they need to have special Gym names.
+                    sponsor = 'sprint';  
+                    break;    
             }
         }
       
         div.innerHTML =
-            '<div class="fortmarker">' +
-                '<div class="fort_container">' +
-                    '<img class="fort_icon" src="static/monocle-icons/forts/' + this.options.fort_team + '.png?201" />' +
-                '</div>' +
-                '<div class="fort_slots_container">' +
-                    '<img class="fort_slots_icon" src="static/img/num_' + this.options.open_slots + '.png" />' +
-                '</div>' +
+            `<div class="fortmarker">` +
+                `<div class="fort_container">` +
+                    `<img class="fort_icon" src="static/monocle-icons/forts/${this.options.fort_team}.png?201" />` +
+                `</div>` +
+                `<div class="fort_slots_container">` +
+                    `<img class="fort_slots_icon" src="static/img/num_${this.options.open_slots}.png" />` +
+                `</div>` +
             '</div>';
-        if (sponsor !== '') {
+
+        if (sponsor !== 'none') {
             div.innerHTML +=
-                '<div class="fort_sponsor_container">' +
-                    '<img class="sponsor_icon_marker" src="static/monocle-icons/raids/' + sponsor + '.png" />' +
-                '</div>';
+                `<div class="fort_sponsor_container">` +
+                    `<img class="sponsor_icon_marker" src="static/monocle-icons/raids/${sponsor}.png" />` +
+                `</div>`;
         }
+
         return div;
     }
 });
@@ -188,58 +238,73 @@ var RaidIcon = L.Icon.extend({
     },
     createIcon: function() {
         var div = document.createElement('div');
-        var sponsor = '';
+        var sponsor = 'none';
 
-        // Woah woah woah. Copying again?
-        if (this.options.external_id.includes(".")) {
-        } else {
-            if (this.options.raid_gym_name === "Starbucks") {
-                sponsor = 'starbucks';
-            } else {
-                sponsor = 'sprint';
+        // Sponsor Checking
+        if (!this.options.external_id.includes(".")){
+
+            switch(this.options.gym_name){
+                case 'Starbucks':
+                    sponsor = 'starbucks';
+                    break;
+
+                case 'Sprint':
+                    sponsor = 'sprint';
+                    break;
+
+                case 'Get $100 In PokéCoins Free':
+                    sponsor = 'sprint';
+                    break;
+
+                default:
+                    // Default to Sprint, because they need to have special Gym names.
+                    sponsor = 'sprint';  
+                    break;    
             }
         }
 
-        if (this.options.raid_pokemon_id !== 0) {
+        // Sponsor HTML, so we don't have to repeat it later.
+        const sponsorHTML =
+            `<div class="raid_sponsor_container">` +
+                    `<img class="sponsor_icon" src="static/monocle-icons/raids/${sponsor}.png" />` +
+                `</div>` +
+                `<div class="raid_remaining_text"`
+                `data-expire1="${this.options.raid_starts_at}" data-expire2="${this.options.raid_ends_at}">` + 
+                `${this.options.raid_ends_at}${this.options.raid_starts_at}</div>` +
+            `</div>`;
+
+        // NonSponsor HTML, so we don't have to repeat it later.
+        const nonsponsorHTML =
+            `<div class="raid_remaining_text" ` +
+                `data-expire1="${this.options.raid_starts_at}" data-expire2="${this.options.raid_ends_at}">` +
+                 `${this.options.raid_ends_at}${this.options.raid_starts_at}</div>` +
+            `</div>`;    
+
+        // If Pokemon has Raid ID that is NOT Zero.
+        if (this.options.raid_pokemon_id) {
             div.innerHTML =
-                '<div class="raidmarker">' +
-                    '<div class="boss_raid_container">' +
-                        '<img class="boss_during_raid" src="static/monocle-icons/larger-icons/' + this.options.raid_pokemon_id + '.png?100" />' +
-                    '</div>' +
-                    '<div class="raid_platform_container">' +
-                        '<img class="pre_raid_icon" src="static/monocle-icons/raids/raid_start_level_' + this.options.raid_level + '.png?201" />' +
-                    '</div>';
-            if (sponsor !== '') {
-                div.innerHTML +=
-                    '<div class="raid_sponsor_container">' +
-                        '<img class="sponsor_icon" src="static/monocle-icons/raids/' + sponsor + '.png" />' +
-                    '</div>' +
-                    '<div class="raid_remaining_text" data-expire1="' + this.options.raid_starts_at + '" data-expire2="' + this.options.raid_ends_at + '">' + this.options.raid_ends_at + this.options.raid_starts_at + '</div>' +
-                '</div>';
-            } else {
-                div.innerHTML +=
-                    '<div class="raid_remaining_text" data-expire1="' + this.options.raid_starts_at + '" data-expire2="' + this.options.raid_ends_at + '">' + this.options.raid_ends_at + this.options.raid_starts_at + '</div>' +
-                '</div>';
-            }
-        } else {
+                `<div class="raidmarker">` +
+                    `<div class="boss_raid_container">` +
+                        `<img class="boss_during_raid" src="static/monocle-icons/larger-icons/${this.options.raid_pokemon_id}.png?100" />` +
+                    `</div>` +
+                    `<div class="raid_platform_container">` +
+                        `<img class="pre_raid_icon" src="static/monocle-icons/raids/raid_start_level_${this.options.raid_level}.png?201" />` +
+                    `</div>`;
+        } 
+        // If Pokemon has no Raid NO (or it is Zero)
+        else {
             div.innerHTML =
-                '<div class="raidmarker">' +
-                    '<div class="pre_raid_container">' +
-                        '<img class="pre_raid_icon" src="static/monocle-icons/raids/raid_level_' + this.options.raid_level + '.png?201" />' +
-                    '</div>';
-            if (sponsor !== '') {
-                div.innerHTML +=
-                    '<div class="raid_sponsor_container">' +
-                        '<img class="sponsor_icon" src="static/monocle-icons/raids/' + sponsor + '.png" />' +
-                    '</div>' +
-                    '<div class="raid_remaining_text" data-expire1="' + this.options.raid_starts_at + '" data-expire2="' + this.options.raid_ends_at + '">' + this.options.raid_ends_at + this.options.raid_starts_at + '</div>' +
-                '</div>';
-            } else {
-                div.innerHTML +=
-                    '<div class="raid_remaining_text" data-expire1="' + this.options.raid_starts_at + '" data-expire2="' + this.options.raid_ends_at + '">' + this.options.raid_ends_at + this.options.raid_starts_at + '</div>' +
-                '</div>';
-            }
+                `<div class="raidmarker">` +
+                    `<div class="pre_raid_container">` +
+                        `<img class="pre_raid_icon" src="static/monocle-icons/raids/raid_level_${this.options.raid_level}.png?201" />` +
+                    `</div>`;
         }
+
+        // Sponsor Check, apply HTML if they are/aren't.
+        (sponsor !== 'none')
+        ? div.innerHTML += sponsorHTML
+        : div.innerHTML += nonsponsorHTML;
+
         return div;
     }
 });
@@ -298,13 +363,11 @@ var hidden_overlays = {
     FilteredGyms: L.markerClusterGroup({ disableClusteringAtZoom: 12 })
 };
 
-function unsetHidden (event) {
-    event.target.hidden = false;
-}
+// Set Hidden to False
+unsetHidden = (event) => event.target.hidden = false;
 
-function setHidden (event) {
-    event.target.hidden = true;
-}
+// Set Hidden to True
+setHidden = (event) => event.target.hidden = true;
 
 function monitor (group, initial) {
     group.hidden = initial;
@@ -328,6 +391,7 @@ if (_DisplaySpawnpointsLayer === 'True') {
     monitor(overlays.Workers, false)
 }
 
+// Runs on Pokemon Popup.
 function getPopupContent (item, boost_status) {
     var diff = (item.expires_at - new Date().getTime() / 1000);
     var minutes = parseInt(diff / 60);
@@ -385,6 +449,7 @@ function getPopupContent (item, boost_status) {
     return content;
 }
 
+// Runs on Raid Popup - TODO: Grab Crowdsourced Data from MySQL Here
 function getRaidPopupContent (item) {
     var start_time = convertToTwelveHourTime(item.raid_battle);
     var end_time = convertToTwelveHourTime(item.raid_end);
@@ -496,15 +561,21 @@ function getRaidPopupContent (item) {
     if ((item.raid_level >= 3) && (item.raid_pokemon_id !== 0)) {
          content += '<br><b>Weak Against:</b><br><img src="static/monocle-icons/raids/counter-' + item.raid_pokemon_id + '.png">';
     }
+    content += `<div class="crowd"></div>`
+    content += `<div><button onclick="postCrowdSource(this)" data-name="${item.gym_name}" data-lat="${item.lat}" data-long="${item.lon}" data-gymid="${item.external_id}">EX Raid Report</button></div>`;
     content += '<br><br><a href="https://www.google.com/maps/?daddr='+ item.lat + ','+ item.lon +'" target="_blank" title="See in Google Maps">Get Directions</a>';
+
     if (item.raid_pokemon_id !== 0) {
         content += '&nbsp; | &nbsp;';
         content += '<a href="https://pokemongo.gamepress.gg/pokemon/' + item.raid_pokemon_id + '#raid-boss-counters" target="_blank" title="Raid Boss Counters">Raid Boss Counters</a>';
     }
     content += '</div>'
+
+    getCrowdSource(item.external_id);
     return content;
 }
 
+// Runs on Gym Popup - TODO: Grab Crowdsourced Data from MySQL Here
 function getFortPopupContent (item) {
     var hours = parseInt(item.time_occupied / 3600);
     var minutes = parseInt((item.time_occupied / 60) - (hours * 60));
@@ -582,9 +653,12 @@ function getFortPopupContent (item) {
                        '<br><b>*Data not available</b>';
         }
     }
+    content += `<div class="crowd"></div>`;
+    content += `<div><button onclick="postCrowdSource(this)" data-name="${item.gym_name}" data-lat="${item.lat}" data-long="${item.lon}" data-gymid="${item.external_id}">EX Raid Report</button></div>`;
     content += '<br><a href=https://www.google.com/maps/?daddr='+ item.lat + ','+ item.lon +' target="_blank" title="See in Google Maps">Get directions</a>';
     content += '</div>'
 
+    getCrowdSource(item.external_id);
     return content;
 }
 
@@ -743,6 +817,8 @@ function FortMarker (raw) {
   
     fort_marker.raw = raw;
     markers[raw.id] = fort_marker;
+
+    // This runs when the Gym Popup opens.
     fort_marker.on('popupopen',function popupopen (event) {
         event.popup.options.autoPan = true; // Pan into view once
         event.popup.setContent(getFortPopupContent(event.target.raw));
@@ -772,6 +848,8 @@ function RaidMarker (raw) {
     raid_marker.sponsor = getSponsorGymType(raw);
     raid_marker.raw = raw;
     markers[raw.id] = raid_marker;
+
+    // This runs when the Raid Popup opens.
     raid_marker.on('popupopen',function popupopen (event) {
         event.popup.options.autoPan = true; // Pan into view once
         event.popup.setContent(getRaidPopupContent(event.target.raw));
@@ -816,13 +894,17 @@ function ExGymMarker (raw) {
     marker.raw = raw;
     ex_markers[raw.id] = marker;
 
+    // This runs when the EX Gym Popup opens.
     marker.on('popupopen',function popupopen (event) {
         var content = ''
         content += '<div class="ex_gym_popup">';
         content += '<b>' + raw.name + ' Gym</b>';
         content += '<br>has been idenified as being an <br>EX Raid Eligible Gym.';
+        content += `<div class="crowd"></div>`;
+        content += `<div><button onclick="postCrowdSource(this)" data-name="${raw.name}" data-lat="${raw.lat}" data-long="${raw.lon}" data-gymid="${raw.external_id}">EX Raid Report</button></div>`;
         content += '<br><br><a href=https://www.google.com/maps/?daddr='+ raw.lat + ','+ raw.lon +' target="_blank" title="See in Google Maps">Get directions</a>';
         content += '</div>';
+        getCrowdSource(raw.external_id);
         event.popup.setContent(content);
     });
     marker.bindPopup();
@@ -836,6 +918,7 @@ function ExRaidMarker (raw) {
     marker.raw = raw;
     ex_markers[raw.id] = marker;
   
+    // This runs when the EX Raid Popup opens.
     marker.on('popupopen',function popupopen (event) {
         var content = ''
         content += '<div class="ex_gym_popup">';
@@ -845,8 +928,11 @@ function ExRaidMarker (raw) {
         content += '<br><br><a href="#" data-action="display" class="ex_raid_popup_show_raids">Show Current Raids</a>';
         content += '&nbsp; | &nbsp;';
         content += '<a href="#" data-action="hide" class="ex_raid_popup_show_raids">Hide Current Raids</a>';
+        content += `<div class="crowd"></div>`;
+        content += `<div><button onclick="postCrowdSource(this)" data-name="${raw.name}" data-lat="${raw.lat}" data-long="${raw.lon}" data-gymid="${raw.external_id}">EX Raid Report</button></div>`;
         content += '<br><br><a href=https://www.google.com/maps/?daddr='+ raw.lat + ','+ raw.lon +' target="_blank" title="See in Google Maps">Get directions</a>';
         content += '</div>';
+        getCrowdSource(raw.external_id);
         event.popup.setContent(content);
     });
     marker.bindPopup();
@@ -905,16 +991,25 @@ function gymCounter() {
     this.total = 0;
 }
 
+// Add up Gym Counter for teams/empty.
 gymCounter.prototype.add = function(data) {
     data.forEach(function(item) {
-        if ( item.team == 1 ) {
-            ++this.mystic;
-        } else if ( item.team == 2 ) {
-            ++this.valor;
-        } else if ( item.team == 3 ) {
-            ++this.instinct;
-        } else {
-            ++this.empty;
+        switch(item.team){
+            case 1:
+                ++this.mystic;
+                break;
+
+            case 2:
+                ++this.valor;
+                break;
+
+            case 3:
+                ++this.instrict;
+                break;
+
+            default:
+                ++this.empty;
+                break;            
         }
         this.total = this.mystic + this.valor + this.instinct + this.empty;
     }, this);
@@ -1137,11 +1232,11 @@ function addWeatherToMap (data, map) {
             }
         });
 
-        if ( item.condition == 0 ) {
-            var weather_icon_bg = 'extreme_icon';
-        } else {
-            var weather_icon_bg = 'icon';
-        }
+        var weather_icon_bg
+        (!item.condition)
+        ? weather_icon_bg = 'extreme_icon'
+        : weather_icon_bg = 'icon';
+
         weatherIconMarker.bindPopup(
             '<div class="weather_popup">' +
                 '<div class="weather_popup_' + weather_icon_bg + '"><img src="static/img/weather_' + item.condition + '_' + day + '.png">' + '</div>' +
@@ -1158,11 +1253,9 @@ function addWeatherToMap (data, map) {
 
 function addScanAreaToMap (data, map) {
     data.forEach(function (item) {
-        if (item.type === 'scanarea'){
-            L.polyline(item.coords).addTo(overlays.ScanArea);
-        } else if (item.type === 'scanblacklist'){
-            L.polyline(item.coords, {'color':'red'}).addTo(overlays.ScanArea);
-        }
+        (item.type === 'scanarea')
+        ? L.polyline(item.coords).addTo(overlays.ScanArea)
+        : L.polyline(item.coords, {'color':'red'}).addTo(overlays.ScanArea);
     });
 }
 
@@ -1358,7 +1451,6 @@ function getExGyms() {
         });
     }).then(function (data) {
         addExGymsToMap(data, map);
-        //addExRaidsToMap(data, map);
     });
 }
 
@@ -1371,7 +1463,6 @@ function getExRaids() {
             resolve(response);
         });
     }).then(function (data) {
-        //addExGymsToMap(data, map);
         addExRaidsToMap(data, map);
     });
 }
@@ -1485,202 +1576,193 @@ map.whenReady(function () {
 
 map.on('overlayadd', onOverLayAdd);
 function onOverLayAdd(e) {
-    if (e.name == 'Gyms') {
-        $('.gym_btn').css('visibility', 'visible');
-    }
     savedGymsToDisplay();
-  
-    if (e.name == 'Pokemon_Gen1') {
-        var hide_button = $("#pokemon_gen1_layer button[data-value='hide']");
-        var display_button = $("#pokemon_gen1_layer button[data-value='display']");
-      
-        boostedPokemonDisplay();
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("POKEMON_GEN1_LAYER",'display');
+
+    switch(e.name){
+        case 'Pokemon_Gen1':
+            var hide_button = $("#pokemon_gen1_layer button[data-value='hide']");
+            var display_button = $("#pokemon_gen1_layer button[data-value='display']");
+            boostedPokemonDisplay();
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("POKEMON_GEN1_LAYER",'display');
+            break;
+
+        case 'Pokemon_Gen2':  
+            var hide_button = $("#pokemon_gen2_layer button[data-value='hide']");
+            var display_button = $("#pokemon_gen2_layer button[data-value='display']");
+            boostedPokemonDisplay();
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("POKEMON_GEN2_LAYER",'display');
+            break;
+
+        case 'Pokemon_Gen3':   
+            var hide_button = $("#pokemon_gen3_layer button[data-value='hide']");
+            var display_button = $("#pokemon_gen3_layer button[data-value='display']");
+            boostedPokemonDisplay();
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("POKEMON_GEN3_LAYER",'display');
+            break;
+
+        case 'Gyms':
+            $('.gym_btn').css('visibility', 'visible');
+            var hide_button = $("#gyms_layer button[data-value='hide']");
+            var display_button = $("#gyms_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("GYMS_LAYER",'display');
+            break;
+
+        case 'Raids':
+            var hide_button = $("#raids_layer button[data-value='hide']");
+            var display_button = $("#raids_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("RAIDS_LAYER",'display');
+            break;
+
+        case 'Parks_In_S2_Cells':
+            var hide_button = $("#parks_in_s2_cells_layer button[data-value='hide']");
+            var display_button = $("#parks_in_s2_cells_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("PARKS_IN_S2_CELLS_LAYER",'display');
+            break;
+
+        case 'EX_Gyms':
+            var hide_button = $("#ex_eligible_layer button[data-value='hide']");
+            var display_button = $("#ex_eligible_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("EX_ELIGIBLE_LAYER",'display');
+            getExGyms();
+            getExRaids();
+            break;
+
+        case 'Weather':
+            var hide_button = $("#weather_layer button[data-value='hide']");
+            var display_button = $("#weather_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("WEATHER_LAYER",'display');
+            break;
+
+        case 'ScanArea':
+            var hide_button = $("#scan_area_layer button[data-value='hide']");
+            var display_button = $("#scan_area_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("SCAN_AREA_LAYER",'display');
+            break;
+            
+        case 'FilteredPokemon':
+            var hide_button = $("#filtered_pokemon_layer button[data-value='hide']");
+            var display_button = $("#filtered_pokemon_layer button[data-value='display']");
+            hide_button.removeClass("active")
+            display_button.addClass("active");
+            setPreference("FILTERED_POKEMON_LAYER",'display');
+            break;
+
+        default:
+            // No Case Found
+            break;
     }
 
-    if (e.name == 'Pokemon_Gen2') {
-        var hide_button = $("#pokemon_gen2_layer button[data-value='hide']");
-        var display_button = $("#pokemon_gen2_layer button[data-value='display']");
-      
-        boostedPokemonDisplay();
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("POKEMON_GEN2_LAYER",'display');
-    }
-
-    if (e.name == 'Pokemon_Gen3') {
-        var hide_button = $("#pokemon_gen3_layer button[data-value='hide']");
-        var display_button = $("#pokemon_gen3_layer button[data-value='display']");
-      
-        boostedPokemonDisplay();
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("POKEMON_GEN3_LAYER",'display');
-    }
-
-    if (e.name == 'Gyms') {
-        var hide_button = $("#gyms_layer button[data-value='hide']");
-        var display_button = $("#gyms_layer button[data-value='display']");
-      
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("GYMS_LAYER",'display');
-    }
-
-    if (e.name == 'Raids') {
-        var hide_button = $("#raids_layer button[data-value='hide']");
-        var display_button = $("#raids_layer button[data-value='display']");
-      
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("RAIDS_LAYER",'display');
-    }
-
-    if (e.name == 'Parks_In_S2_Cells') {
-        var hide_button = $("#parks_in_s2_cells_layer button[data-value='hide']");
-        var display_button = $("#parks_in_s2_cells_layer button[data-value='display']");
-
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("PARKS_IN_S2_CELLS_LAYER",'display');
-    }
-
-    if (e.name == 'EX_Gyms') {
-        var hide_button = $("#ex_eligible_layer button[data-value='hide']");
-        var display_button = $("#ex_eligible_layer button[data-value='display']");
-
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("EX_ELIGIBLE_LAYER",'display');
-        getExGyms();
-        getExRaids();
-    }
-
-    if (e.name == 'Weather') {
-        var hide_button = $("#weather_layer button[data-value='hide']");
-        var display_button = $("#weather_layer button[data-value='display']");
-      
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("WEATHER_LAYER",'display');
-    }
-
-    if (e.name == 'ScanArea') {
-        var hide_button = $("#scan_area_layer button[data-value='hide']");
-        var display_button = $("#scan_area_layer button[data-value='display']");
-      
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("SCAN_AREA_LAYER",'display');
-    }
-
-    if (e.name == 'FilteredPokemon') {
-        var hide_button = $("#filtered_pokemon_layer button[data-value='hide']");
-        var display_button = $("#filtered_pokemon_layer button[data-value='display']");
-      
-        hide_button.removeClass("active")
-        display_button.addClass("active");
-        setPreference("FILTERED_POKEMON_LAYER",'display');
-    }
 }
 
 map.on('overlayremove', onOverLayRemove);
 function onOverLayRemove(e) {
     var gymDisplayPreference = getPreference('gym_filter_buttons');
-    if ((e.name == 'Gyms') && (gymDisplayPreference != 'display_gym_filters')) {
-        $('.gym_btn').css('visibility', 'hidden');
-    }
-  
-    if (e.name == 'Pokemon_Gen1') {
-        var hide_button = $("#pokemon_gen1_layer button[data-value='hide']");
-        var display_button = $("#pokemon_gen1_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("POKEMON_GEN1_LAYER",'hide');
-    }
 
-    if (e.name == 'Pokemon_Gen2') {
-        var hide_button = $("#pokemon_gen2_layer button[data-value='hide']");
-        var display_button = $("#pokemon_gen2_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("POKEMON_GEN2_LAYER",'hide');
-    }
-  
-    if (e.name == 'Pokemon_Gen3') {
-        var hide_button = $("#pokemon_gen3_layer button[data-value='hide']");
-        var display_button = $("#pokemon_gen3_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("POKEMON_GEN3_LAYER",'hide');
-    }
+    switch(e.name){
+        case 'Pokemon_Gen1':
+            var hide_button = $("#pokemon_gen1_layer button[data-value='hide']");
+            var display_button = $("#pokemon_gen1_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("POKEMON_GEN1_LAYER",'hide');
+            break;
 
-    if (e.name == 'Gyms') {
-        var hide_button = $("#gyms_layer button[data-value='hide']");
-        var display_button = $("#gyms_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("GYMS_LAYER",'hide');
-    }
-  
-    if (e.name == 'Raids') {
-        var hide_button = $("#raids_layer button[data-value='hide']");
-        var display_button = $("#raids_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("RAIDS_LAYER",'hide');
-    }
+        case 'Pokemon_Gen2':  
+            var hide_button = $("#pokemon_gen2_layer button[data-value='hide']");
+            var display_button = $("#pokemon_gen2_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("POKEMON_GEN2_LAYER",'hide');  
+            break;
 
-    if (e.name == 'Parks_In_S2_Cells') {
-        var hide_button = $("#parks_in_s2_cells_layer button[data-value='hide']");
-        var display_button = $("#parks_in_s2_cells_layer button[data-value='display']");
+        case 'Pokemon_Gen3':   
+            var hide_button = $("#pokemon_gen3_layer button[data-value='hide']");
+            var display_button = $("#pokemon_gen3_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("POKEMON_GEN3_LAYER",'hide');
+            break;
 
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("PARKS_IN_S2_CELLS_LAYER",'hide');
-    }
+        case 'Gyms':
+            if(gymDisplayPreference != 'display_gym_filters'){
+                $('.gym_btn').css('visibility', 'hidden');
+            }
+            var hide_button = $("#gyms_layer button[data-value='hide']");
+            var display_button = $("#gyms_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("GYMS_LAYER",'hide');
+            break;
 
-    if (e.name == 'EX_Gyms') {
-        var hide_button = $("#ex_eligible_layer button[data-value='hide']");
-        var display_button = $("#ex_eligible_layer button[data-value='display']");
+        case 'Raids':
+            var hide_button = $("#raids_layer button[data-value='hide']");
+            var display_button = $("#raids_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("RAIDS_LAYER",'hide');
+            break;
 
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("EX_ELIGIBLE_LAYER",'hide');
-    }
-  
-    if (e.name == 'Weather') {
-        var hide_button = $("#weather_layer button[data-value='hide']");
-        var display_button = $("#weather_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("WEATHER_LAYER",'hide');
-    }
-  
-    if (e.name == 'ScanArea') {
-        var hide_button = $("#scan_area_layer button[data-value='hide']");
-        var display_button = $("#scan_area_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("SCAN_AREA_LAYER",'hide');
-    }
+        case 'Parks_In_S2_Cells':
+            var hide_button = $("#parks_in_s2_cells_layer button[data-value='hide']");
+            var display_button = $("#parks_in_s2_cells_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("PARKS_IN_S2_CELLS_LAYER",'hide');
+            break;
 
-    if (e.name == 'FilteredPokemon') {
-        var hide_button = $("#filtered_pokemon_layer button[data-value='hide']");
-        var display_button = $("#filtered_pokemon_layer button[data-value='display']");
-      
-        hide_button.addClass("active")
-        display_button.removeClass("active");
-        setPreference("FILTERED_POKEMON_LAYER",'hide');
+        case 'EX_Gyms':
+            var hide_button = $("#ex_eligible_layer button[data-value='hide']");
+            var display_button = $("#ex_eligible_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("EX_ELIGIBLE_LAYER",'hide');
+            break;
+
+        case 'Weather':
+            var hide_button = $("#weather_layer button[data-value='hide']");
+            var display_button = $("#weather_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("WEATHER_LAYER",'hide');
+            break;
+
+        case 'ScanArea':
+            var hide_button = $("#scan_area_layer button[data-value='hide']");
+            var display_button = $("#scan_area_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("SCAN_AREA_LAYER",'hide');
+            break;
+            
+        case 'FilteredPokemon':
+            var hide_button = $("#filtered_pokemon_layer button[data-value='hide']");
+            var display_button = $("#filtered_pokemon_layer button[data-value='display']");
+            hide_button.addClass("active")
+            display_button.removeClass("active");
+            setPreference("FILTERED_POKEMON_LAYER",'hide');
+            break;
+
+        default:
+            // No Case Found
+            break;
     }
 
 }
@@ -1753,12 +1835,9 @@ $('.instinct-gym-filter').on('click', function () {
        setPreference("instinct_gym_filter", "active");
     }
             
-    if (key.indexOf('gym_selection') > -1){
-        // This is a gym's filter button
-        savedGymsToDisplay();
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_selection') > -1) // This is a gym's filter button
+    ? gymToDisplay(value)
+    : setPreference(key, value);
     
     if (!map.hasLayer(overlays.Gyms)) {
         map.addLayer(overlays.Gyms);
@@ -1781,12 +1860,9 @@ $('.valor-gym-filter').on('click', function () {
        setPreference("valor_gym_filter", "active");
     }
 
-    if (key.indexOf('gym_selection') > -1){
-        // This is a gym's filter button
-        savedGymsToDisplay();
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_selection') > -1) // This is a gym's filter button
+    ? gymToDisplay(value)
+    : setPreference(key, value);
     
     if (!map.hasLayer(overlays.Gyms)) {
         map.addLayer(overlays.Gyms);
@@ -1809,12 +1885,9 @@ $('.mystic-gym-filter').on('click', function () {
        setPreference("mystic_gym_filter", "active");
     }
             
-    if (key.indexOf('gym_selection') > -1){
-        // This is a gym's filter button
-        savedGymsToDisplay();
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_selection') > -1) // This is a gym's filter button
+    ? gymToDisplay(value)
+    : setPreference(key, value);
     
     if (!map.hasLayer(overlays.Gyms)) {
         map.addLayer(overlays.Gyms);
@@ -1837,12 +1910,9 @@ $('.empty-gym-filter').on('click', function () {
        setPreference("empty_gym_filter", "active");
     }
             
-    if (key.indexOf('gym_selection') > -1){
-        // This is a gym's filter button
-        gymToDisplay(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_selection') > -1) // This is a gym's filter button
+    ? gymToDisplay(value)
+    : setPreference(key, value);
     
     if (!map.hasLayer(overlays.Gyms)) {
         map.addLayer(overlays.Gyms);
@@ -1866,12 +1936,9 @@ $('.open-spot-gym-filter').on('click', function () {
        setPreference("open_spot_gym_filter", "active");
     }
     
-    if (key.indexOf('gym_selection') > -1){
-        // This is a gym's filter button
-        gymToDisplay(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_selection') > -1) // This is a gym's filter button
+    ? gymToDisplay(value)
+    : setPreference(key, value);
     
     if (!map.hasLayer(overlays.Gyms)) {
         map.addLayer(overlays.Gyms);
@@ -1906,12 +1973,9 @@ $('.all-gyms-filter').on('click', function () {
     setPreference("empty_gym_filter", "active");
     setPreference("open_spot_gym_filter", "active");
     
-    if (key.indexOf('gym_selection') > -1){
-        // This is a gym's filter button
-        gymToDisplay(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_selection') > -1) // This is a gym's filter button
+    ? gymToDisplay(value)
+    : setPreference(key, value);
     
     if (!map.hasLayer(overlays.Gyms)) {
         map.addLayer(overlays.Gyms);
@@ -1962,10 +2026,9 @@ $('#settings').on('click', '.settings-panel button', function () {
         var item = $(this);
         var key = item.data('group');
         var value = getPreference(key);
-        if (value === false)
-            value = "0";
-        else if (value === true)
-            value = "1";
+        (!value)
+        ? value = "0"
+        : value = "1";
         item.children("button").removeClass("active").filter("[data-value='"+value+"']").addClass("active");
         });
         item.removeClass("active");
@@ -1980,10 +2043,9 @@ $('#settings').on('click', '.settings-panel button', function () {
         var item = $(this);
         var key = item.data('group');
         var value = getPreference(key);
-        if (value === false)
-            value = "0";
-        else if (value === true)
-            value = "1";
+        (!value)
+        ? value = "0"
+        : value = "1";
         item.children("button").removeClass("active").filter("[data-value='"+value+"']").addClass("active");
         });
         item.removeClass("active");
@@ -1998,10 +2060,9 @@ $('#settings').on('click', '.settings-panel button', function () {
         var item = $(this);
         var key = item.data('group');
         var value = getPreference(key);
-        if (value === false)
-            value = "0";
-        else if (value === true)
-            value = "1";
+        (!value)
+        ? value = "0"
+        : value = "1";
         item.children("button").removeClass("active").filter("[data-value='"+value+"']").addClass("active");
         });
         item.removeClass("active");
@@ -2037,142 +2098,93 @@ $('#settings').on('click', '.settings-panel button', function () {
         }
     }
 
-    if (key.indexOf('filter-') > -1){
-        // This is a pokemon's filter button
-        moveToLayer(id, value);
-    }else{
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('raid_filter-') > -1){
-        // This is a raid's level filter button
-        moveRaidToLayer(r_id, id, value);
-    }else{
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('sponsored_filter') > -1){
-        // This is a raid's sponsor filter button
-        moveSponsoredToLayer(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('filter-') > -1) // This is a pokemon's filter button
+    ? moveToLayer(id, value)
+    : setPreference(key, value);
 
-    if (key.indexOf('gym_filter_buttons') > -1){
-        // This is the gym filter buttons switch
-        setGymButtonsDisplay(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('raid_filter-') > -1) // This is a raid's level filter button
+    ? moveRaidToLayer(r_id, id, value)
+    : setPreference(key, value);
 
-    if (key.indexOf('show_sponsored_gym_logo') > -1){
-        // This is the sponsored gym logo buttons switch
-        setSponsoredLogoDisplay(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('sponsored_filter') > -1) // This is a raid's sponsor filter button
+    ? moveSponsoredToLayer(value)
+    : setPreference(key, value);
+ 
+    (key.indexOf('gym_filter_buttons') > -1) // This is the gym filter buttons switch
+    ? setGymButtonsDisplay(value)
+    : setPreference(key, value);
 
-    if (key.indexOf('gen1_buttons') > -1){
-        setGen1Buttons(value);
-    }else{
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('gen2_buttons') > -1){
-        setGen2Buttons(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('show_sponsored_gym_logo') > -1) // This is the sponsored gym logo buttons switch
+    ? setSponsoredLogoDisplay(value)
+    : setPreference(key, value);
 
-    if (key.indexOf('gen3_buttons') > -1){
-        setGen3Buttons(value);
-    }else{
-        setPreference(key, value);
-    }
+    (key.indexOf('gen1_buttons') > -1)
+    ? setGen1Buttons(value)
+    : setPreference(key, value);
 
-    if (key.indexOf('icon_theme_buttons') > -1){
-        setIconTheme(value);
-    }else{
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('show_boosted_pokemon') > -1){
-        setBoostedPokemonDisplay(value);
-    }else{
-        setPreference(key,value);
-    }
-    
-    if (key.indexOf('show_pokemon_type') > -1){
-        setTypeIconDisplay(value);
-    }else{
-        setPreference(key,value);
-    }
-    
-    if (key.indexOf('gym_landmark') > -1){
-        setLandmarkDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
+    (key.indexOf('gen2_buttons') > -1)
+    ? setGen2Buttons(value)
+    : setPreference(key, value);
 
-    if (key.indexOf('POKEMON_GEN1_LAYER') > -1){
-        setPokemonGen1LayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('POKEMON_GEN2_LAYER') > -1){
-        setPokemonGen2LayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
+    (key.indexOf('gen3_buttons') > -1)
+    ? setGen3Buttons(value)
+    : setPreference(key, value);
+ 
+    (key.indexOf('icon_theme_buttons') > -1)
+    ? setIconTheme(value)
+    : setPreference(key, value);
 
-    if (key.indexOf('POKEMON_GEN3_LAYER') > -1){
-        setPokemonGen3LayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('GYMS_LAYER') > -1){
-        setGymLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('RAIDS_LAYER') > -1){
-        setRaidsLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
+    (key.indexOf('show_boosted_pokemon') > -1)
+    ? setBoostedPokemonDisplay(value)
+    : setPreference(key,value);
 
-    if (key.indexOf('PARKS_IN_S2_CELLS_LAYER') > -1){
-        setParksInS2CellsLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
-
-    if (key.indexOf('EX_ELIGIBLE_LAYER') > -1){
-        setExGymsLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
+    (key.indexOf('show_pokemon_type') > -1)
+    ? setTypeIconDisplay(value)
+    : setPreference(key,value);
     
-    if (key.indexOf('WEATHER_LAYER') > -1){
-        setWeatherLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
-    
-    if (key.indexOf('SCAN_AREA_LAYER') > -1){
-        setScanAreaLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
+    (key.indexOf('gym_landmark') > -1)
+    ? setLandmarkDisplay(value)
+    : setPreference(key, value);
 
-    if (key.indexOf('FILTERED_POKEMON_LAYER') > -1){
-        setFilteredPokemonLayerDisplay(value);
-    } else {
-        setPreference(key, value);
-    }
+    (key.indexOf('POKEMON_GEN1_LAYER') > -1)
+    ? setPokemonGen1LayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('POKEMON_GEN2_LAYER') > -1)
+    ? setPokemonGen2LayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('POKEMON_GEN3_LAYER') > -1)
+    ? setPokemonGen3LayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('GYMS_LAYER') > -1)
+    ? setGymLayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('RAIDS_LAYER') > -1)
+    ? setRaidsLayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('PARKS_IN_S2_CELLS_LAYER') > -1)
+    ? setParksInS2CellsLayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('EX_ELIGIBLE_LAYER') > -1)
+    ? setExGymsLayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('WEATHER_LAYER') > -1)
+    ? setWeatherLayerDisplay(value)
+    : setPreference(key, value);
+    
+    (key.indexOf('SCAN_AREA_LAYER') > -1)
+    ? setScanAreaLayerDisplay(value)
+    : setPreference(key, value);
+
+    (key.indexOf('FILTERED_POKEMON_LAYER') > -1)
+    ? setFilteredPokemonLayerDisplay(value)
+    : setPreference(key, value);
 });
 
 function moveToLayer(id, layer){
@@ -2409,53 +2421,37 @@ function savedGymsToDisplay() {
 }
 
 function sponsoredGymLogoDisplay(){
-    if (getPreference("show_sponsored_gym_logo") === "hide_sponsored_gym_logo") {
-        $('.sponsor_icon_marker').css('visibility', 'hidden');
-    } else {
-        $('.sponsor_icon_marker').css('visibility', 'visible');
-    }
+    (getPreference("show_sponsored_gym_logo") === "hide_sponsored_gym_logo")
+    ? $('.sponsor_icon_marker').css('visibility', 'hidden')
+    : $('.sponsor_icon_marker').css('visibility', 'visible');
 }
 
 function boostedPokemonDisplay() {
-    if (getPreference("show_boosted_pokemon") === "hide") {
-        $('.boosted_type').css('visibility','hidden');
-    } else {
-        $('.boosted_type').css('visibility','visible');
-    }
+    (getPreference("show_boosted_pokemon") === "hide")
+    ? $('.boosted_type').css('visibility','hidden')
+    : $('.boosted_type').css('visibility','visible');
 }
 
 function typeIconDisplay() {
-    if (getPreference("show_pokemon_type") === "display") {
-        $('.type_icons').css('visibility','visible');
-    } else {
-        $('.type_icons').css('visibility','hidden');
-    }
+    (getPreference("show_pokemon_type") === "display")
+    ? $('.type_icons').css('visibility','visible')
+    : $('.type_icons').css('visibility','hidden');
 }
 
 function setBoostedPokemonDisplay(value) {
     setPreference("show_boosted_pokemon", value);
-    if (value == "display") {
-        $(".boosted_type").each(function() {
-            $(this).css('visibility', 'visible');
-        });
-    } else {
-        $(".boosted_type").each(function() {
-            $(this).css('visibility', 'hidden');
-        });
-    }
+
+    (value == "display")
+    ? $(".boosted_type").each(() => $(this).css('visibility', 'visible'))
+    : $(".boosted_type").each(() => $(this).css('visibility', 'hidden'));
 }
 
 function setTypeIconDisplay(value) {
     setPreference("show_pokemon_type", value);
-    if (value == "display") {
-        $(".type_icons").each(function() {
-            $(this).css('visibility', 'visible');
-        });
-    } else {
-        $(".type_icons").each(function() {
-            $(this).css('visibility', 'hidden');
-        });
-    }
+
+    (value == "display")
+    ? $(".type_icons").each(() => $(this).css('visibility', 'visible'))
+    : $(".type_icons").each(() => $(this).css('visibility', 'hidden'));
 }
 
 function setLandmarkDisplay(value) {
@@ -2464,146 +2460,122 @@ function setLandmarkDisplay(value) {
 
 function setPokemonGen1LayerDisplay(value) {
     setPreference("POKEMON_GEN1_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Pokemon_Gen1);
-    } else {
-        map.removeLayer(overlays.Pokemon_Gen1);
-    }
+
+    (value === "display")
+    ? map.addLayer(overlays.Pokemon_Gen1)
+    : map.removeLayer(overlays.Pokemon_Gen1);
 }
 
 function setPokemonGen2LayerDisplay(value) {
-    setPreference("POKEMON_GEN2_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Pokemon_Gen2);
-    } else {
-        map.removeLayer(overlays.Pokemon_Gen2);
-    }
+    setPreference("POKEMON_GEN2_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.Pokemon_Gen2)
+    :map.removeLayer(overlays.Pokemon_Gen2);
 }
 
 function setPokemonGen3LayerDisplay(value) {
-    setPreference("POKEMON_GEN3_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Pokemon_Gen3);
-    } else {
-        map.removeLayer(overlays.Pokemon_Gen3);
-    }
+    setPreference("POKEMON_GEN3_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.Pokemon_Gen3)
+    : map.removeLayer(overlays.Pokemon_Gen3);
 }
 
 function setGymLayerDisplay(value) {
-    setPreference("GYMS_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Gyms);
-    } else {
-        map.removeLayer(overlays.Gyms);
-    }
+    setPreference("GYMS_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.Gyms)
+    : map.removeLayer(overlays.Gyms);
 }
 
 function setRaidsLayerDisplay(value) {
-    setPreference("RAIDS_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Raids);
-    } else {
-        map.removeLayer(overlays.Raids);
-    }
+    setPreference("RAIDS_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.Raids)
+    : map.removeLayer(overlays.Raids);
 }
 
 function setParksInS2CellsLayerDisplay(value) {
-    setPreference("PARKS_IN_S2_CELLS_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Parks_In_S2_Cells);
-    } else {
-        map.removeLayer(overlays.Parks_In_S2_Cells);
-    }
+    setPreference("PARKS_IN_S2_CELLS_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.Parks_In_S2_Cells)
+    : map.removeLayer(overlays.Parks_In_S2_Cells);
 }
 
 function setExGymsLayerDisplay(value) {
-    setPreference("EX_ELIGIBLE_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.EX_Gyms);
-    } else {
-        map.removeLayer(overlays.EX_Gyms);
-    }
+    setPreference("EX_ELIGIBLE_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.EX_Gyms)
+    : map.removeLayer(overlays.EX_Gyms);
 }
 
 function setWeatherLayerDisplay(value) {
-    setPreference("WEATHER_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.Weather);
-    } else {
-        map.removeLayer(overlays.Weather);
-    }
+    setPreference("WEATHER_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.Weather)
+    : map.removeLayer(overlays.Weather);
 }
 
 function setScanAreaLayerDisplay(value) {
-    setPreference("SCAN_AREA_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.ScanArea);
-    } else {
-        map.removeLayer(overlays.ScanArea);
-    }
+    setPreference("SCAN_AREA_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.ScanArea)
+    : map.removeLayer(overlays.ScanArea);
 }
 
 function setFilteredPokemonLayerDisplay(value) {
-    setPreference("FILTERED_POKEMON_LAYER", value)
-    if ( value === "display" ) {
-        map.addLayer(overlays.FilteredPokemon);
-    } else {
-        map.removeLayer(overlays.FilteredPokemon);
-    }
+    setPreference("FILTERED_POKEMON_LAYER", value);
+
+    (value === "display")
+    ? map.addLayer(overlays.FilteredPokemon)
+    : map.removeLayer(overlays.FilteredPokemon);
 }
 
 function setGymButtonsDisplay(value){
     setPreference("gym_filter_buttons", value);
-    if (value == "display_gym_filters") {
-        $(".gym_btn").each(function() {
-            $(this).css('visibility', 'visible');
-        });
-    } else {
-        $(".gym_btn").each(function() {
-            $(this).css('visibility', 'hidden');
-        });
-    }
+
+    (value == "display_gym_filters")
+    ? $(".gym_btn").each(() => $(this).css('visibility', 'visible'))
+    : $(".gym_btn").each(() => $(this).css('visibility', 'hidden'));
 }
 
 function setSponsoredLogoDisplay(value){
     setPreference("show_sponsored_gym_logo", value);
-    if (value == "display_sponsored_gym_logo") {
-        $(".sponsor_icon_marker").each(function() {
-            $(this).css('visibility','visible');
-        });
-    } else {
-        $(".sponsor_icon_marker").each(function() {
-            $(this).css('visibility','hidden');
-        });
-    }
-    
+
+    (value == "display_sponsored_gym_logo")
+    ? $(".sponsor_icon_marker").each(() => $(this).css('visibility','visible'))
+    : $(".sponsor_icon_marker").each(() => $(this).css('visibility','hidden'));
 }
 
 function setGen1Buttons(value){
     setPreference("gen1_buttons", value);
-    if (value == "display_gen1") {
-        $('.gen_1').css('display', '');
-    } else if (value === "collapse_gen1") {
-        $('.gen_1').css('display', 'none');
-    }
+
+    (value == "display_gen1")
+    ? $('.gen_1').css('display', '')
+    : $('.gen_1').css('display', 'none');
 }
 
 function setGen2Buttons(value){
     setPreference("gen2_buttons", value);
-    if (value == "display_gen2") {
-        $('.gen_2').css('display', '');
-    } else if (value === "collapse_gen2") {
-        $('.gen_2').css('display', 'none');
-    }
+
+    (value == "display_gen2")
+    ? $('.gen_2').css('display', '')
+    : $('.gen_2').css('display', 'none');
 }
 
 function setGen3Buttons(value){
     setPreference("gen3_buttons", value);
-    if (value == "display_gen3") {
-        $('.gen_3').css('display', '');
-    } else if (value === "collapse_gen3") {
-        $('.gen_3').css('display', 'none');
-    }
+
+    (value == "display_gen3")
+    ? $('.gen_3').css('display', '')
+    : $('.gen_3').css('display', 'none');
 }
 
 function setIconTheme(value){
@@ -2808,41 +2780,34 @@ function setSettingsDefaults(){
         _defaultSettings['POKEMON_GEN2_LAYER'] = "hide";
         _defaultSettings['POKEMON_GEN3_LAYER'] = "hide";
     }
-    if (_DisplayGymsLayer === 'True') {
-        _defaultSettings['GYMS_LAYER'] = "display";
-    } else {
-        _defaultSettings['GYMS_LAYER'] = "hide";
-    }
-    if (_DisplayRaidsLayer === 'True') {
-        _defaultSettings['RAIDS_LAYER'] = "display";
-    } else {
-        _defaultSettings['RAIDS_LAYER'] = "hide";
-    }
-    if (_DisplayParksInS2CellsLayer === 'True') {
-        _defaultSettings['PARKS_IN_S2_CELLS_LAYER'] = "display";
-    } else {
-        _defaultSettings['PARKS_IN_S2_CELLS_LAYER'] = "hide";
-    }
-    if (_DisplayEXGymsLayer === 'True') {
-        _defaultSettings['EX_ELIGIBLE_LAYER'] = "display";
-    } else {
-        _defaultSettings['EX_ELIGIBLE_LAYER'] = "hide";
-    }
-    if (_DisplayWeatherLayer === 'True') {
-        _defaultSettings['WEATHER_LAYER'] = "display";
-    } else {
-        _defaultSettings['WEATHER_LAYER'] = "hide";
-    }
-    if (_DisplayFilteredPokemonLayer === 'True') {
-        _defaultSettings['FILTERED_POKEMON_LAYER'] = "display";
-    } else {
-        _defaultSettings['FILTERED_POKEMON_LAYER'] = "hide";
-    }
-    if (_DisplayScanAreaLayer === 'True') {
-        _defaultSettings['SCAN_AREA_LAYER'] = "display";
-    } else {
-        _defaultSettings['SCAN_AREA_LAYER'] = "hide";
-    }
+
+    (_DisplayGymsLayer === 'True')
+    ? _defaultSettings['GYMS_LAYER'] = "display"
+    : _defaultSettings['GYMS_LAYER'] = "hide";
+
+    (_DisplayRaidsLayer === 'True')
+    ? _defaultSettings['RAIDS_LAYER'] = "display"
+    : _defaultSettings['RAIDS_LAYER'] = "hide";
+
+    (_DisplayParksInS2CellsLayer === 'True')
+    ? _defaultSettings['PARKS_IN_S2_CELLS_LAYER'] = "display"
+    : _defaultSettings['PARKS_IN_S2_CELLS_LAYER'] = "hide";
+
+    (_DisplayEXGymsLayer === 'True')
+    ? _defaultSettings['EX_ELIGIBLE_LAYER'] = "display"
+    : _defaultSettings['EX_ELIGIBLE_LAYER'] = "hide";
+
+    (_DisplayWeatherLayer === 'True')
+    ? _defaultSettings['WEATHER_LAYER'] = "display"
+    : _defaultSettings['WEATHER_LAYER'] = "hide";
+
+    (_DisplayFilteredPokemonLayer === 'True')
+    ? _defaultSettings['FILTERED_POKEMON_LAYER'] = "display"
+    : _defaultSettings['FILTERED_POKEMON_LAYER'] = "hide";
+
+    (_DisplayScanAreaLayer === 'True')
+    ? _defaultSettings['SCAN_AREA_LAYER'] = "display"
+    : _defaultSettings['SCAN_AREA_LAYER'] = "hide";
 
     for (var i = 1; i <= _pokemon_count; i++){
         _defaultSettings['filter-'+i] = (_defaultSettings['TRASH_IDS'].indexOf(i) > -1) ? "trash" : "pokemon";
@@ -2874,101 +2839,70 @@ function setSettingsDefaults(){
 populateSettingsPanels();
 setSettingsDefaults();
 
-if (getPreference("gym_filter_buttons") === "hide_gym_filters") {
-    $('.gym_btn').css('visibility', 'hidden');
-} else {
-    savedGymsToDisplay();
-}
+(getPreference("gym_filter_buttons") === "hide_gym_filters")
+? $('.gym_btn').css('visibility', 'hidden')
+: savedGymsToDisplay();
 
-if (getPreference("show_sponsored_gym_logo") === "hide_sponsored_gym_logo") {
-    $('.sponsor_icon_marker').css('visibility', 'hidden');
-} else {
-    $('.sponsor_icon_marker').css('visibility', 'visible');
-}
+(getPreference("show_sponsored_gym_logo") === "hide_sponsored_gym_logo")
+? $('.sponsor_icon_marker').css('visibility', 'hidden')
+: $('.sponsor_icon_marker').css('visibility', 'visible');
 
-if (getPreference("show_boosted_pokemon") === "hide") {
-    $('.boosted_type').css('visibility','hidden');
-} else {
-    $('.boosted_type').css('visibility','visible');
-}
+(getPreference("show_boosted_pokemon") === "hide")
+? $('.boosted_type').css('visibility','hidden')
+: $('.boosted_type').css('visibility','visible');
 
-if ((getPreference("gen1_buttons") === "display_gen1")) {
-    $('.gen_1').css('display', '');
-} else {
-    $('.gen_1').css('display', 'none');
-}
+(getPreference("gen1_buttons") === "display_gen1")
+? $('.gen_1').css('display', '')
+: $('.gen_1').css('display', 'none');
 
-if ((getPreference("gen2_buttons") === "display_gen2")) {
-    $('.gen_2').css('display', '');
-} else {
-    $('.gen_2').css('display', 'none');
-}
+(getPreference("gen2_buttons") === "display_gen2")
+? $('.gen_2').css('display', '')
+: $('.gen_2').css('display', 'none');
 
-if ((getPreference("gen3_buttons") === "display_gen3")) {
-    $('.gen_3').css('display', '');
-} else {
-    $('.gen_3').css('display', 'none');
-}
+(getPreference("gen3_buttons") === "display_gen3")
+? $('.gen_3').css('display', '')
+: $('.gen_3').css('display', 'none');
 
-if ( getPreference("POKEMON_GEN1_LAYER") === "display" ) {
-    map.addLayer(overlays.Pokemon_Gen1);
-} else {
-    map.removeLayer(overlays.Pokemon_Gen1);
-}
+(getPreference("POKEMON_GEN1_LAYER") === "display")
+? map.addLayer(overlays.Pokemon_Gen1)
+: map.removeLayer(overlays.Pokemon_Gen1);
 
-if ( getPreference("POKEMON_GEN2_LAYER") === "display" ) {
-    map.addLayer(overlays.Pokemon_Gen2);
-} else {
-    map.removeLayer(overlays.Pokemon_Gen2);
-}
+(getPreference("POKEMON_GEN2_LAYER") === "display")
+? map.addLayer(overlays.Pokemon_Gen2)
+: map.removeLayer(overlays.Pokemon_Gen2);
 
-if ( getPreference("POKEMON_GEN3_LAYER") === "display" ) {
-    map.addLayer(overlays.Pokemon_Gen3);
-} else {
-    map.removeLayer(overlays.Pokemon_Gen3);
-}
+(getPreference("POKEMON_GEN3_LAYER") === "display")
+? map.addLayer(overlays.Pokemon_Gen3)
+: map.removeLayer(overlays.Pokemon_Gen3);
 
-if ( getPreference("GYMS_LAYER") === "display" ) {
-    map.addLayer(overlays.Gyms);
-} else {
-    map.removeLayer(overlays.Gyms);
-}
+(getPreference("GYMS_LAYER") === "display")
+? map.addLayer(overlays.Gyms)
+: map.removeLayer(overlays.Gyms);
 
-if ( getPreference("RAIDS_LAYER") === "display" ) {
-    map.addLayer(overlays.Raids);
-} else {
-    map.removeLayer(overlays.Raids);
-}
+(getPreference("RAIDS_LAYER") === "display")
+? map.addLayer(overlays.Raids)
+: map.removeLayer(overlays.Raids);
 
-if ( getPreference("PARKS_IN_S2_CELLS_LAYER") === "display" ) {
-    map.addLayer(overlays.Parks_In_S2_Cells);
-} else {
-    map.removeLayer(overlays.Parks_In_S2_Cells);
-}
+(getPreference("PARKS_IN_S2_CELLS_LAYER") === "display")
+? map.addLayer(overlays.Parks_In_S2_Cells)
+: map.removeLayer(overlays.Parks_In_S2_Cells);
 
-if ( getPreference("EX_ELIGIBLE_LAYER") === "display" ) {
-    map.addLayer(overlays.EX_Gyms);
-} else {
-    map.removeLayer(overlays.EX_Gyms);
-}
+(getPreference("EX_ELIGIBLE_LAYER") === "display")
+? map.addLayer(overlays.EX_Gyms)
+: map.removeLayer(overlays.EX_Gyms);
 
-if ( getPreference("WEATHER_LAYER") === "display" ) {
-    map.addLayer(overlays.Weather);
-} else {
-    map.removeLayer(overlays.Weather);
-}
+(getPreference("WEATHER_LAYER") === "display")
+? map.addLayer(overlays.Weather)
+: map.removeLayer(overlays.Weather);
 
-if ( getPreference("SCAN_AREA_LAYER") === "display" ) {
-    map.addLayer(overlays.ScanArea);
-} else {
-    map.removeLayer(overlays.ScanArea);
-}
+(getPreference("SCAN_AREA_LAYER") === "display")
+? map.addLayer(overlays.ScanArea)
+: map.removeLayer(overlays.ScanArea);
 
-if ( getPreference("FILTERED_POKEMON_LAYER") === "display" ) {
-    map.addLayer(overlays.FilteredPokemon);
-} else {
-    map.removeLayer(overlays.FilteredPokemon);
-}
+(getPreference("FILTERED_POKEMON_LAYER") === "display")
+? map.addLayer(overlays.FilteredPokemon)
+: map.removeLayer(overlays.FilteredPokemon);
+
 
 function getPreference(key, ret){
     return localStorage.getItem(key) ? localStorage.getItem(key) : (key in _defaultSettings ? _defaultSettings[key] : ret);
@@ -2979,19 +2913,15 @@ function setPreference(key, val){
 }
 
 $(window).scroll(function () {
-    if ($(this).scrollTop() > 100) {
-        $('.scroll-up').fadeIn();
-    } else {
-        $('.scroll-up').fadeOut();
-    }
+    ($(this).scrollTop() > 100)
+    ? $('.scroll-up').fadeIn()
+    : $('.scroll-up').fadeOut();
 });
 
 $("#settings").scroll(function () {
-    if ($(this).scrollTop() > 100) {
-        $('.scroll-up').fadeIn();
-    } else {
-        $('.scroll-up').fadeOut();
-    }
+    ($(this).scrollTop() > 100)
+    ? $('.scroll-up').fadeIn()
+    : $('.scroll-up').fadeOut();
 });
 
 $('.scroll-up').click(function () {
@@ -3138,13 +3068,11 @@ function onLocationFound(e) {
 // Really? Copying this too?
 function getSponsorGymType(raw) {
     var sponsor_type = '';
-  
-  
-    if (raw.external_id.includes(".")) {
-        sponsor_type = 'non-sponsored';
-    } else {
-        sponsor_type = 'sponsored';
-    }
+    var id = raw.external_id;
+    (id.includes('.'))
+    ? sponsor_type = 'non-sponsored'
+    : sponsor_type = 'sponsored';
+
     return sponsor_type;
 }
 
@@ -3156,21 +3084,20 @@ function getVertices(center_point) {
 }
 
 function getTypeIcons(pokemon_id) {
-    var innerHTML = '<div class="type_icons"><img id="type" class="type-' + pokemon_name_type[pokemon_id][2] + '" src="static/img/blank_1x1.png">';
-
-    if ( pokemon_name_type[pokemon_id][3] != "none") {
-        innerHTML += '<img id="type" class="type-' + pokemon_name_type[pokemon_id][3] + '" src="static/img/blank_1x1.png">';
-    }
-    innerHTML += '</div>';
+    var innerHTML = '';
+    (pokemon_name_type[pokemon_id][3] != "none")
+    ? innerHTML = `<div class="type_icons"><img id="type" class="type-${pokemon_name_type[pokemon_id][2]}" src="static/img/blank_1x1.png"><img id="type" class="type-${pokemon_name_type[pokemon_id][3]}" src="static/img/blank_1x1.png"></div>`
+    : innerHTML = `<div class="type_icons"><img id="type" class="type-${pokemon_name_type[pokemon_id][2]}" src="static/img/blank_1x1.png"></div>`;
+    
     return innerHTML;
 }
 
 function checkBoost(boost_status) {
     var innerHTML = '';
-  
-    if ( boost_status === "boosted" ) {
-        innerHTML = '<div class="boosted_type"><img id="boost" class="boosted_icon" src="static/img/blank_1x1.png"></div>';
-    }
+    (boost_status === "boosted")
+    ? innerHTML = '<div class="boosted_type"><img id="boost" class="boosted_icon" src="static/img/blank_1x1.png"></div>'
+    : innerHTML = '';
+
     return innerHTML;
 }
 
