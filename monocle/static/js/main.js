@@ -45,8 +45,8 @@ var PokemonIcon = L.Icon.extend({
         
         // If options.form exists, set the form_text accordingly.
         (this.options.form) 
-            ? const form_text = `<div class="form_text">${this.options.form}</div>`
-            : const form_text = ``;
+        ? const form_text = `<div class="form_text">${this.options.form}</div>`
+        : const form_text = ``;
 
         // Set initial innerHTML, to not repeat code.
         div.innerHTML = 
