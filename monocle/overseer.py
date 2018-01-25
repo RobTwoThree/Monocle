@@ -194,9 +194,9 @@ class Overseer:
         * = sending a notification
         ~ = encountering a Pokémon
         I = initial, haven't done anything yet
-        » = waiting to log in (limited by SIMULTANEOUS_LOGINS)
-        ° = waiting to start app simulation (limited by SIMULTANEOUS_SIMULATION)
-        ∞ = bootstrapping
+        w = waiting to log in (limited by SIMULTANEOUS_LOGINS)
+        W = waiting to start app simulation (limited by SIMULTANEOUS_SIMULATION)
+        B = bootstrapping
         L = logging in
         A = simulating app startup
         T = completing the tutorial
