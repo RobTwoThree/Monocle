@@ -554,7 +554,7 @@ def add_sighting(session, pokemon):
         move_2=pokemon.get('move_2'),
         cp=pokemon.get('cp'),
         form=pokemon.get('form', 0),
-        s2_cell_id=pokemon['s2_cell_id']
+        s2_cell_id=pokemon.get('s2_cell_id', 0)
     )
     session.add(obj)
     SIGHTING_CACHE.add(pokemon)
