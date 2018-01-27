@@ -310,7 +310,7 @@ def get_ex_gyms():
                 # osm polygon can be a line
                 if len(coords) == 2:
                     shape = LineString(coords)
-                    if shape.within(gym_point) or cell.intersects(shape):
+                    if shape.within(cell.centroid):
                         ex_gyms.append({
                             'id': g['id'],
                             'external_id': g['external_id'],
@@ -321,7 +321,7 @@ def get_ex_gyms():
                         })
                 if len(coords) > 2:
                     shape = Polygon(coords)
-                    if shape.contains(gym_point) or cell.intersects(shape):
+                    if shape.contains(cell.centroid):
                         ex_gyms.append({
                             'id': g['id'],
                             'external_id': g['external_id'],
