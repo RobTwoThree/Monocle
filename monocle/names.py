@@ -953,7 +953,7 @@ MOVES = defaultdict(lambda: '?', {
     230: 'Water Gun',
     231: 'Splash',
     232: 'Water Gun',
-    233: 'Mud Slap',
+    233: 'Mud-Slap',
     234: 'Zen Headbutt',
     235: 'Confusion',
     236: 'Poison Sting',
@@ -1001,7 +1001,17 @@ MOVES = defaultdict(lambda: '?', {
     278: 'Snarl',
     279: 'Crunch',
     280: 'Foul Play',
-    281: 'Hidden Power'
+    281: 'Hidden Power',
+    282: 'Take Down',
+    283: 'Waterfall',
+    284: 'Surf',
+    285: 'Draco Meteor',
+    286: 'Doom Desire',
+    287: 'Yawn',
+    288: 'Psycho Boost',
+    289: 'Origin Pulse',
+    290: 'Precipice Blades',
+    291: 'Present'
 })
 
 if language == 'EN':
@@ -1480,7 +1490,17 @@ elif language == 'DE':
         278: 'Standpauke',
         279: 'Knirscher',
         280: 'Schmarotzer',
-        281: 'Kraftreserve'
+        281: 'Kraftreserve',
+        282: 'Bodycheck',
+        283: 'Kaskade',
+        284: 'Surfer',
+        285: 'Draco Meteor',
+        286: 'Kismetwunsch',
+        287: 'Gähner',
+        288: 'Psyschub',
+        289: 'Ursprungswoge',
+        290: 'Abgrundsklinge',
+        291: 'Geschenk'
     })
 elif language == 'FR':
     POKEMON = defaultdict(lambda: '?', {
@@ -1956,7 +1976,17 @@ elif language == 'FR':
         278: 'Aboiement',
         279: 'Mâchouille',
         280: 'Tricherie',
-        281: 'Puissance Cachée'
+        281: 'Puissance Cachée',
+        282: 'Bélier',
+        283: 'Cascade',
+        284: 'Surf',
+        285: 'Draco Météore',
+        286: 'Carnareket',
+        287: 'Bâillement',
+        288: 'Psycho Boost',
+        289: 'Onde Originelle',
+        290: 'Lame Pangéenne',
+        291: 'Cadeau'
     })
 elif language == 'ZH':
     POKEMON = defaultdict(lambda: '?', {
@@ -2432,7 +2462,17 @@ elif language == 'ZH':
         278: '大聲咆哮',
         279: '咬碎',
         280: '欺詐',
-        281: '覺醒力量'
+        281: '覺醒力量',
+        282: '猛撞',
+        283: '攀瀑',
+        284: '衝浪',
+        285: '流星群',
+        286: '破滅之願',
+        287: '哈欠',
+        288: '精神突進',
+        289: '根源波動',
+        290: '斷崖之劍',
+        291: '禮物'
     })
 elif language == 'JA':
     POKEMON = defaultdict(lambda: '?', {
@@ -2908,7 +2948,17 @@ elif language == 'JA':
         278: 'バークアウト',
         279: 'かみくだく',
         280: 'イカサマ',
-        281: 'めざめるパワー'
+        281: 'めざめるパワー',
+        282: 'とっしん',
+        283: 'たきのぼり',
+        284: 'なみのり',
+        285: 'りゅうせいぐん',
+        286: 'はめつのねがい',
+        287: 'あくび',
+        288: 'サイコブースト',
+        289: 'こんげんのはどう',
+        290: 'だんがいのつるぎ',
+        291: 'プレゼント'
     })
 elif language == 'ES':
     # Pokémon names are the same as English
@@ -3131,7 +3181,17 @@ elif language == 'ES':
         278: 'Alarido',
         279: 'Triturar',
         280: 'Juego Sucio',
-        281: 'Poder Oculto'
+        281: 'Poder Oculto',
+        282: 'Derribo',
+        283: 'Cascada',
+        284: 'Surf',
+        285: 'Cometa Draco',
+        286: 'Deseo Oculto',
+        287: 'Bostezo',
+        288: 'Psicoataque',
+        289: 'Pulso Primigenio',
+        290: 'Filo del Abismo',
+        291: 'Presente'
     })
 elif language == 'IT':
     # Pokémon names are the same as English
@@ -3315,7 +3375,7 @@ elif language == 'IT':
         239: 'Alacciaio',
         240: 'Rogodenti',
         241: 'Spaccaroccia',
-        242: 'Trasformaz',
+        242: 'Trasformazione',
         243: 'Contrattacco',
         244: 'Polneve',
         245: 'Zuffa',
@@ -3354,7 +3414,17 @@ elif language == 'IT':
         278: 'Urlorabbia',
         279: 'Sgranocchio',
         280: 'Ripicca',
-        281: 'Introforza'
+        281: 'Introforza',
+        282: 'Riduttore',
+        283: 'Cascata',
+        284: 'Surf',
+        285: 'Dragobolide',
+        286: 'Obbliderio',
+        287: 'Sbadiglio',
+        288: 'Psicoslancio',
+        289: 'Primopulsar',
+        290: 'Spade Telluriche',
+        291: 'Regalino'
     })
 elif language == 'KO':
     POKEMON = defaultdict(lambda: '?', {
@@ -3830,7 +3900,17 @@ elif language == 'KO':
         278: '바크아웃',
         279: '깨물어부수기',
         280: '속임수',
-        281: '잠재파워'
+        281: '잠재파워',
+        282: '돌진',
+        283: '폭포오르기',
+        284: '파도타기',
+        285: '용성군',
+        286: '파멸의소원',
+        287: '하품',
+        288: '사이코부스트',
+        289: '근원의파동',
+        290: '단애의칼',
+        291: '프레젠트'
     })
 elif language == 'PT':
     POKEMON[205] = 'Forrestress'
@@ -3853,7 +3933,7 @@ elif language == 'PT':
         15: 'Lambida',
         16: 'Pulso Sombrio',
         17: 'Nevoeiro de Fumaça',
-        18: 'Lodo',
+        18: 'Ataque de Lama',
         19: 'Garra de Metal',
         20: 'Agarramento Viciado',
         21: 'Roda de Fogo',
@@ -3944,7 +4024,7 @@ elif language == 'PT':
         106: 'Escaldada',
         107: "Jato d'Água",
         108: 'Psíquico',
-        109: 'Ataque Psíquico',
+        109: 'Golpe Psíquico',
         110: 'Caco de Gelo',
         111: 'Vento Congelante',
         112: 'Respiração de Gelo',
@@ -4054,7 +4134,17 @@ elif language == 'PT':
         278: 'Rosnado',
         279: 'Mastigada',
         280: 'Jogo Sujo',
-        281: 'Poder Oculto'
+        281: 'Poder Oculto',
+        282: 'Desmantelar',
+        283: 'Cachoeira',
+        284: 'Surfar',
+        285: 'Meteoro do Dragão',
+        286: 'Desejo Cruel',
+        287: 'Bocejo',
+        288: 'Impulso Psíquico',
+        289: 'Pulso Original',
+        290: 'Lâmina Abissal',
+        291: 'Presente'
     })
 else:
     raise ValueError('Language must be EN, DE, ES, FR, IT, JA, KO, PT, or ZH. You set {}.'.format(conf.LANGUAGE))
