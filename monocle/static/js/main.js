@@ -3139,7 +3139,6 @@ function onLocationFound(e) {
 function getSponsorGymType(raw) {
     var sponsor_type = '';
   
-  
     if (raw.external_id.includes(".")) {
         sponsor_type = 'non-sponsored';
     } else {
