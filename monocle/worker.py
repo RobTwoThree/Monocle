@@ -1287,11 +1287,11 @@ class Worker:
             pokemon_s2_cell_id = s2sphere.CellId.from_lat_lng(s2sphere.LatLng.from_degrees(raw.latitude,raw.longitude)).parent(10)
             s2_cell_id = pokemon_s2_cell_id.id()
         
-        #Check form just for Unown 201
-        if raw.pokemon_data.pokemon_id == 201 and raw.pokemon_data.pokemon_display.form > 0:
-            unown_form = raw.pokemon_data.pokemon_display.form
+        #Check form for Unown 201 and Castform 351
+        if ((raw.pokemon_data.pokemon_id == 201) or (raw.pokemon_data.pokemon_id == 351)) and (raw.pokemon_data.pokemon_display.form > 0):
+            pokemon_form = raw.pokemon_data.pokemon_display.form
         else:
-            unown_form = None
+            pokemon_form = None
         norm = {
             'type': 'pokemon',
             'encounter_id': raw.encounter_id,
@@ -1299,7 +1299,7 @@ class Worker:
             'lat': raw.latitude,
             'lon': raw.longitude,
             'spawn_id': int(raw.spawn_point_id, 16) if spawn_int else raw.spawn_point_id,
-            'form': unown_form,
+            'form': pokemon_form,
             's2_cell_id': s2_cell_id,
             'seen': tss
         }

@@ -3,6 +3,7 @@ var _pokemon_count = 386; // Orignally 251 for Gen 1 - 2
 var _pokemon_count_gen_1 = 151;
 var _pokemon_count_gen_2 = 251;
 var _pokemon_count_gen_3 = 386;
+var _spritesheet_g3v4 = [276,277,278,279,283,284,313,314,333,334,351,357,358,371,372,373,374,375,376,384];
 var _WorkerIconUrl = 'static/monocle-icons/assets/ball.png';
 var _PokestopIconUrl = 'static/monocle-icons/assets/stop.png';
 var _LocationMarker;
@@ -38,21 +39,44 @@ var PokemonIcon = L.Icon.extend({
     createIcon: function() {
         var div = document.createElement('div');
         var form_text = '';
+        var pokemon_icon_id = this.options.iconID;
         var type_icon_html = getTypeIcons(this.options.iconID);
         var boosted_icon_html = checkBoost(this.options.boost_status);
+        var spritesheet = 'sprite';
         
         typeIconDisplay();
         boostedPokemonDisplay();
+
+        switch (pokemon_icon_id){
+            case 201:
+                if (this.options.form) {
+                    // I know you stole this stuff from me
+                    form_text = '<div class="form_text">' + getUnownForm(this.options.form) + '</div>';
+                }
+                break;
+            case 351:
+                if (this.options.form) {
+                    pokemon_icon_id = this.options.iconID + '_' + this.options.form;
+                    console.log(pokemon_icon_id);
+                }
+                break;
+            default:
+                pokemon_icon_id = this.options.iconID;
+        }
         
-        if ( this.options.form ) {
-            form_text = '<div class="form_text">' + this.options.form + '</div>';
+        if (getPreference("icon_theme_buttons") === 'og')
+        {
+            if (_spritesheet_g3v4.indexOf(this.options.iconID) > -1)
+            {
+                spritesheet = 'g3v4-sprite';
+            }
         }
                                 
         if ( this.options.iv > 0 && this.options.iv < 80 ) {
             div.innerHTML =
                 '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
+                    '<div class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '">' +
+                        '<span class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '-' + pokemon_icon_id + '" />' +
                     '</div>' +
                     '<div class="iv_text">' + this.options.iv.toFixed(0) + '%</div>' +
                     '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
@@ -61,8 +85,8 @@ var PokemonIcon = L.Icon.extend({
         }else if ( this.options.iv >= 80 && this.options.iv < 90 ) {
             div.innerHTML =
                 '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
+                    '<div class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '">' +
+                        '<span class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '-' + pokemon_icon_id + '" />' +
                     '</div>' +
                     '<div class="iv_gt_80_text">' + this.options.iv.toFixed(0) + '%</div>' +
                     '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
@@ -71,8 +95,8 @@ var PokemonIcon = L.Icon.extend({
         }else if ( this.options.iv >= 90 && this.options.iv < 100) {
             div.innerHTML =
                 '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
+                    '<div class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '">' +
+                        '<span class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '-' + pokemon_icon_id + '" />' +
                     '</div>' +
                     '<div class="iv_gt_90_text">' + this.options.iv.toFixed(0) + '%</div>' +
                     '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
@@ -81,8 +105,8 @@ var PokemonIcon = L.Icon.extend({
         }else if ( this.options.iv == 100 ) {
             div.innerHTML =
                 '<div class="pokemarker">' +
-                '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
+                '<div class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '">' +
+                '<span class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '-' + pokemon_icon_id + '" />' +
                 '</div>' +
                 '<div class="iv_eq_100_img"><img class="iv_eq_100_img" src="static/img/100.png"></div>' +
                 '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
@@ -91,8 +115,8 @@ var PokemonIcon = L.Icon.extend({
         }else{
             div.innerHTML =
                 '<div class="pokemarker">' +
-                    '<div class="sprite-' + getPreference("icon_theme_buttons") + '">' +
-                        '<span class="sprite-' + getPreference("icon_theme_buttons") + '-' + this.options.iconID + '" />' +
+                    '<div class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '">' +
+                        '<span class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '-' + pokemon_icon_id + '" />' +
                     '</div>' +
                     '<div class="remaining_text" data-expire="' + this.options.expires_at + '">' + calculateRemainingTime(this.options.expires_at) + '</div>' +
                     form_text +
@@ -334,10 +358,9 @@ function getPopupContent (item, boost_status) {
     var seconds = parseInt(diff - (minutes * 60));
     var expires_at = minutes + 'm ' + seconds + 's';
     var expires_time = convertToTwelveHourTime(item.expires_at);
-    var form = getForm(item.form);
     var day = ['none','day','night'];
-    if (item.form > 0) {
-       var pokemon_name = item.name + ' - ' + form;
+    if ((item.pokemon_id === 201) && (item.form > 0)) {
+       var pokemon_name = item.name + ' - ' + getUnownForm(item.form);
     } else {
        var pokemon_name = item.name;
     }
@@ -595,7 +618,7 @@ function getOpacity (diff) {
     return 0.5 + diff / 600;
 }
 
-function getForm (f) {
+function getUnownForm (f) {
     if ((f !== null) && f !== 0) {
         return String.fromCharCode(f + 64);
     }
@@ -611,9 +634,6 @@ function PokemonMarker (raw) {
   
     boostedPokemonDisplay();
   
-    // I know you stole this stuff from me
-    var unown_letter = getForm(raw.form);
-  
     // Don't call boost status function if 0
     if ( ( parseInt(raw.pokemon_s2_cell_id) === 0 ) || ( raw.pokemon_s2_cell_id === null ) ) {
         var boost_status = 'normal'
@@ -621,7 +641,7 @@ function PokemonMarker (raw) {
         var boost_status = getBoostStatus(raw);
     }
   
-    var icon = new PokemonIcon({iconID: raw.pokemon_id, iv: totaliv, cp: raw.cp, form: unown_letter, expires_at: raw.expires_at, boost_status: boost_status});
+    var icon = new PokemonIcon({iconID: raw.pokemon_id, iv: totaliv, cp: raw.cp, form: raw.form, expires_at: raw.expires_at, boost_status: boost_status});
     var marker = L.marker([raw.lat, raw.lon], {icon: icon, opacity: 1});
     var intId = parseInt(raw.id.split('-')[1]);
     if (_last_pokemon_id < intId){
@@ -2617,7 +2637,7 @@ function populateSettingsPanels(){
     var container = $('.settings-panel[data-panel="filters"]').children('.panel-body');
     var newHtml =
             '<h5>Raid Level Filters</h5><br>';
-  
+
     for (var i = 1; i <= 5; i++){
         var partHtml =
             '<div class="text-center">' +
@@ -2754,13 +2774,23 @@ function populateSettingsPanels(){
                 '<button type="button" class="btn btn-default" data-value="pokemon">Show Generation 3</button>   ' +
                 '<button type="button" class="btn btn-default" data-value="trash">Hide Generation 3</button>' +
             '</div><br>';
-
+  
     for (var i = _pokemon_count_gen_2 + 1; i <= _pokemon_count_gen_3; i++){
+        var spritesheet = 'sprite';
+
+        if (getPreference("icon_theme_buttons") === 'og')
+        {
+            if (_spritesheet_g3v4.indexOf(i) > -1)
+            {
+                spritesheet = 'g3v4-sprite';
+            }
+        }
+
         var partHtml =
             '<div class="filter_buttons_group">' +
                 '<div class="filter_container">' +
                     '<div class="filter_sprite_container">' +
-                        '<div id="menu" class="sprite-' + getPreference("icon_theme_buttons") + '"><span class="sprite-' + getPreference("icon_theme_buttons") + '-'+i+'"></span></div>' +
+                        '<div id="menu" class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '"><span class="' + spritesheet + '-' + getPreference("icon_theme_buttons") + '-'+i+'"></span></div>' +
                     '</div>' +
                     '<div class="filter_button_container">' +
                         '<div class="btn-group" role="group" data-group="filter-' + i + '">' +
@@ -2771,7 +2801,7 @@ function populateSettingsPanels(){
                     '<div class="pokemon_name_container">' + pokemon_name_type[i][1] + '</div>' +
                 '</div>' +
             '</div>';
-
+      
         newHtml += partHtml
     }
   
